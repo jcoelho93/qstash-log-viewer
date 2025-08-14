@@ -23,12 +23,16 @@ interface EventsDashboardProps {
 }
 
 
+
 const EventsDashboard = ({ defaultUrl = "http://localhost:8081" }: EventsDashboardProps) => {
+  // Load from environment variables if available, fallback to default
+  const initialApiUrl = import.meta.env.VITE_QSTASH_URL || defaultUrl;
+  const initialBearerToken = import.meta.env.VITE_QSTASH_TOKEN || "";
   const [events, setEvents] = useState<QstashEvent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [apiUrl, setApiUrl] = useState(defaultUrl);
+  const [apiUrl, setApiUrl] = useState(initialApiUrl);
   const [showSettings, setShowSettings] = useState(false);
-  const [bearerToken, setBearerToken] = useState("");
+  const [bearerToken, setBearerToken] = useState(initialBearerToken);
   const { toast } = useToast();
 
   const fetchEvents = async () => {
