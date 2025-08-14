@@ -22,26 +22,37 @@ interface EventsDashboardProps {
   defaultUrl?: string;
 }
 
-const EventsDashboard = ({ defaultUrl = "http://localhost:8080" }: EventsDashboardProps) => {
+
+const EventsDashboard = ({ defaultUrl = "http://localhost:8081" }: EventsDashboardProps) => {
   const [events, setEvents] = useState<QstashEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [apiUrl, setApiUrl] = useState(defaultUrl);
   const [showSettings, setShowSettings] = useState(false);
+  const [bearerToken, setBearerToken] = useState("");
   const { toast } = useToast();
 
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${apiUrl}/v2/logs`);
+      const headers: Record<string, string> = {};
+      if (bearerToken) {
+        headers["Authorization"] = `Bearer ${bearerToken}`;
+      }
+      const response = await fetch(`${apiUrl}/v2/logs`, {
+        headers,
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const data = await response.json();
-      
+      const events = data['events'] || []; // Ensure we handle cases where 'events' might not be present
+      console.log("events: ", events); // Debugging log
+
       // Sort events by time (newest first)
-      const sortedEvents = (Array.isArray(data) ? data : []).sort((a, b) => b.time - a.time);
+      const sortedEvents = (Array.isArray(events) ? events : []).sort((a, b) => b.time - a.time);
+      console.log(sortedEvents); // Debugging log
       setEvents(sortedEvents);
-      
+
       toast({
         title: "Events refreshed",
         description: `Loaded ${sortedEvents.length} events`,
@@ -124,13 +135,24 @@ const EventsDashboard = ({ defaultUrl = "http://localhost:8080" }: EventsDashboa
               <CardTitle className="text-lg">API Configuration</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-3">
-                <Input
-                  value={apiUrl}
-                  onChange={(e) => setApiUrl(e.target.value)}
-                  placeholder="Enter API URL"
-                  className="flex-1"
-                />
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-3">
+                  <Input
+                    value={apiUrl}
+                    onChange={(e) => setApiUrl(e.target.value)}
+                    placeholder="Enter API URL"
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Input
+                    value={bearerToken}
+                    onChange={(e) => setBearerToken(e.target.value)}
+                    placeholder="Enter Bearer Token"
+                    className="flex-1"
+                    type="password"
+                  />
+                </div>
                 <Button onClick={fetchEvents} disabled={loading}>
                   Update
                 </Button>
@@ -228,7 +250,7 @@ const EventsDashboard = ({ defaultUrl = "http://localhost:8080" }: EventsDashboa
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="lg:col-span-2">
                         <p className="text-sm font-medium text-foreground mb-1">URL</p>
                         <p className="text-sm text-muted-foreground font-mono break-all">
@@ -240,7 +262,7 @@ const EventsDashboard = ({ defaultUrl = "http://localhost:8080" }: EventsDashboa
                           </Badge>
                         )}
                       </div>
-                      
+
                       <div className="lg:col-span-2">
                         <p className="text-sm font-medium text-foreground mb-1">Message ID</p>
                         <p className="text-xs text-muted-foreground font-mono break-all">
